@@ -9,28 +9,23 @@ import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
 public class Board {
 
-    private Board(String title, HashMap<Integer, List<String>> lines,
-                  Map<String, String> variableValues) {
+    private Board(String title, HashMap<Integer, List<String>> lines) {
         this.title = title;
         this.lines = lines;
-        this.variableValues = variableValues;
     }
 
     public static Board of(String title) {
-        return new Board(title, Maps.newHashMap(), Maps.newHashMap());
+        return new Board(title, Maps.newHashMap());
     }
 
     private final String title;
 
     private final HashMap<Integer, List<String>> lines;
-
-    private final Map<String, String> variableValues;
 
     private int getLowestIndex() {
         return this.lines.keySet().stream().reduce(Integer::min).orElse(10);
@@ -75,6 +70,7 @@ public class Board {
 
     public void sendScoreboard(Player player) {
 
+
         Scoreboard board = new Scoreboard();
         ScoreboardObjective objective = board.registerObjective(this.title, IScoreboardCriteria.b);
 
@@ -89,6 +85,14 @@ public class Board {
         Objects.requireNonNull((((CraftPlayer) player).getHandle()).playerConnection);
         Stream.of(new Packet[]{removeScoreboardPacket, createScoreboardPacket, displayScoreboardPacket})
                 .forEach((((CraftPlayer) player).getHandle()).playerConnection::sendPacket);
+
+
+        this.lines.keySet().forEach(key -> this.lines.get(key).forEach(scoreLine -> {
+            ScoreboardScore score = new ScoreboardScore(board, objective, scoreLine);
+            score.setScore(key);
+            PacketPlayOutScoreboardScore scoreboardScore = new PacketPlayOutScoreboardScore(score);
+            ((CraftPlayer) player).getHandle().playerConnection.sendPacket(scoreboardScore);
+        }));
 
     }
 
